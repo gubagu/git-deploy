@@ -1,0 +1,37 @@
+#!/bin/sh
+# This is Joomla git deplyment script. The script makes several assumtions in order to work. 
+# If these assumtions are not met the script will not work
+# 1. The git repo is on the same level with public_html where is the root of your joomla site.
+# 2. The php helper file getJConfig is in the same directory as this post-receive hook.
+# 3. There are two configuration files configuration.php - development and configuraion-dev.php.
+# 2. The php helper file is in the same directory as this hook script.
+# Written by zarro@new-identity.eu
+
+
+SCRIPTDIR="$( dirname "${BASH_SOURCE}" )"
+SITEROOT="$(cd $SCRIPTDIR && cd ../../ && pwd -P)"/public_html
+SETTINGS=($( $SCRIPTDIR/getJConfig $SITEROOT user password db )) #Get Joomla config variables as array and load them into local variables for further use.
+ 
+DBUSER=${SETTINGS[0]} 
+DBPASS=${SETTINGS[1]}
+DATABASE=${SETTINGS[2]}
+DBFILEDIR=$SITEROOT"/SQLVersionControl"
+DBFILE=$DATABASE".sql"
+COMMITMESSAGE=$(git log -1 HEAD --pretty=format:%s)
+
+if [[ "$COMMITMESSAGE" == *\[deploy\-files\]* || "$COMMITMESSAGE" == *\[deploy\-all\]* ]]; then
+        echo "**************************************"
+        echo "Post receive hook: Updating website..."
+        echo "**************************************"
+        export GIT_WORK_TREE=$SITEROOT
+               
+        if [[ "$COMMITMESSAGE" == *\[deploy\-all\]* ]]; then
+            #Deploy files and database
+            echo "Deploying files..." && git checkout -f && echo "Site Files deployed." && echo "Deploying database..." && mysql -h localhost -u $DBUSER -p$DBPASS $DATABASE < $DBFILEDIR/$DBFILE && echo "Database deployed." && echo "Cleaning..." && rm -rf $DBFILEDIR && echo "SQLVersionControl Directory deleted." && mv $SITEROOT/configuration.php $SITEROOT/configuration-dev.php && mv $SITEROOT/configuration-production.php $SITEROOT/configuration.php && echo "Website configuration set to production. The site should be fully functional now nJoy!"
+        else
+            #Deploy only files
+            echo "Deploying files..." && git checkout -f && echo "Site Files deployed." && echo "Cleaning..." && rm -rf $DBFILEDIR && echo "SQLVersionControl Directory deleted." && mv $SITEROOT/configuration.php $SITEROOT/configuration-dev.php && mv $SITEROOT/configuration-production.php $SITEROOT/configuration.php && echo "Website configuration set to production. The site should be fully functional now nJoy!"
+        fi
+fi
+
+exit 0

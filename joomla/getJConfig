@@ -1,0 +1,26 @@
+#!/usr/local/bin/php
+
+<?php 
+/* Helper function to get config variables from Joomla JConfig class 
+ * ! You NEED WORKING CONFIG FILE FOR THE SCRIPT TO WORK !
+ */
+$args = $_SERVER['argv'];
+$jcongigLocation = $args[1]."/configuration.php";
+array_slice($args, 2); //Remove file name and config file location
+include_once ($jcongigLocation);
+
+function getConfig($congig_value) {
+    $config = new JConfig;
+    $configs = array();
+    
+    foreach ($congig_value as $value) {
+        $configs[$value] = $config->$value;
+    }
+    echo implode(" ", $configs);
+}
+
+if (class_exists('JConfig')) {
+   getConfig($args);
+} else {
+    echo "JConfigClassNotFound@".$jcongigLocation;
+}

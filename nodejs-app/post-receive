@@ -1,0 +1,26 @@
+#!/bin/sh
+
+
+SCRIPTDIR="$( dirname "${BASH_SOURCE}" )"
+SITEROOT="$(cd $SCRIPTDIR && cd ../../ && pwd -P)"/path/to/yoursie/root
+
+COMMITMESSAGE=$(git log -1 HEAD --pretty=format:%s)
+
+if [[ "$COMMITMESSAGE" == *\[deploy\-files\]* ]]; then
+        echo "**************************************"
+        echo "Post receive hook: Updating website..."
+        echo "**************************************"
+        export GIT_WORK_TREE=$SITEROOT
+               
+        #Deploy files
+        echo "Deploying files..." && \
+        git checkout -f && \
+        cd  $SITEROOT && \
+        npm install && \
+		node -e "require('grunt').tasks(['add your grunt tasks that have to be build']);" && \
+        echo "Site Files are deployed." && \
+        echo "The site should be fully functional now." && \
+		echo "nJoy!"
+fi
+
+exit 0
